@@ -1,0 +1,907 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8">
+  <title>শিক্ষার্থী আইডি কার্ড - মাদরাসা ভেরিফিকেশন সিস্টেম</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.maateen.me/kalpurush/font.css" rel="stylesheet">
+  
+  <style>
+    @font-face {
+      font-family: 'Qayyum Book';
+      src: url('ফন্ট/Qayyum Book.ttf') format('truetype');
+      font-display: swap;
+    }
+    @font-face {
+      font-family: 'JunudullahZami';
+      src: url('ফন্ট/FN Junudullah Zami.ttf') format('truetype');
+      font-display: swap;
+    }
+    @font-face {
+      font-family: 'Sheikh Hasina';
+      src: url('ফন্ট/Li Sheikh Hasina 2 Unicode.ttf') format('truetype');
+      font-display: swap;
+    }
+    @font-face {
+      font-family: 'Bornomala';
+      src: url('ফন্ট/Bornomala-Regular.ttf') format('truetype');
+      font-display: swap;
+    }
+    @font-face {
+      font-family: 'Ador Noirrit';
+      src: url('ফন্ট/Li Ador Noirrit A-V2 Light.ttf') format('truetype');
+      font-display: swap;
+    }
+
+    :root {
+      --primary: #2563eb;
+      --primary-dark: #1d4ed8;
+      --primary-light: #dbeafe;
+      --danger: #dc2626;
+      --danger-dark: #991b1b;
+      --gray-50: #fafafa;
+      --gray-100: #f4f4f5;
+      --gray-200: #e4e4e7;
+      --gray-300: #d4d4d8;
+      --gray-400: #a1a1aa;
+      --gray-500: #71717a;
+      --gray-600: #52525b;
+      --gray-700: #3f3f46;
+      --gray-800: #27272a;
+      --gray-900: #18181b;
+      --shadow: 0 1px 2px rgba(0,0,0,0.04), 0 8px 24px rgba(0,0,0,0.04);
+      --shadow-hover: 0 1px 3px rgba(0,0,0,0.06), 0 12px 40px rgba(0,0,0,0.06);
+      --radius: 12px;
+      --transition: all 0.2s ease;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeScale {
+      from { opacity: 0; transform: scale(0.96); }
+      to { opacity: 1; transform: scale(1); }
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: var(--gray-50);
+      font-family: 'Kalpurush', 'Qayyum Book', -apple-system, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      color: var(--gray-900);
+    }
+
+    .main-container {
+      width: 100%;
+      max-width: 840px;
+      animation: fadeUp 0.4s ease;
+    }
+
+    /* ===== Overlay ===== */
+    .status-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.55);
+      backdrop-filter: blur(8px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.3s, visibility 0.3s;
+    }
+    .status-overlay.active {
+      opacity: 1;
+      visibility: visible;
+    }
+    .status-overlay.warning {
+      background: rgba(153,27,27,0.65);
+    }
+    .overlay-card {
+      background: rgba(255,255,255,0.08);
+      backdrop-filter: blur(20px);
+      border-radius: 24px;
+      padding: 40px 56px;
+      border: 1px solid rgba(255,255,255,0.08);
+      text-align: center;
+      animation: fadeScale 0.3s ease;
+      max-width: 580px;
+      width: 90%;
+    }
+    .overlay-main {
+      font-family: 'Sheikh Hasina', serif;
+      font-size: clamp(2.2rem, 6vw, 4rem);
+      color: #fff;
+      display: block;
+      border-bottom: 1px solid rgba(255,255,255,0.12);
+      padding-bottom: 14px;
+      margin-bottom: 10px;
+      line-height: 1.2;
+    }
+    .overlay-sub {
+      font-family: 'Bornomala', sans-serif;
+      font-size: clamp(1.1rem, 2.5vw, 1.8rem);
+      color: #fcd34d;
+      display: block;
+    }
+    .overlay-sub.warning-sub {
+      color: #fca5a5;
+      animation: pulse 1.5s infinite;
+    }
+
+    /* ===== Header ===== */
+    .header {
+      background: #fff;
+      border-radius: var(--radius) var(--radius) 0 0;
+      padding: 24px 28px 18px;
+      text-align: center;
+      border-bottom: 1px solid var(--gray-200);
+      box-shadow: var(--shadow);
+    }
+    .logo {
+      max-width: 150px;
+      height: auto;
+      margin-bottom: 6px;
+    }
+    .header-title {
+      font-family: 'JunudullahZami', serif;
+      font-size: clamp(20px, 3.5vw, 26px);
+      color: var(--gray-900);
+    }
+    .header-sub {
+      font-size: 14px;
+      color: var(--gray-500);
+      margin-top: 2px;
+    }
+    .year-badge {
+      display: inline-block;
+      background: var(--gray-100);
+      color: var(--gray-600);
+      padding: 5px 24px;
+      border-radius: 100px;
+      font-size: 15px;
+      font-weight: 500;
+      margin-top: 8px;
+    }
+
+    /* ===== Main Card ===== */
+    .student-card {
+      background: #fff;
+      border-radius: 0 0 var(--radius) var(--radius);
+      padding: 28px;
+      box-shadow: var(--shadow);
+      border: 1px solid var(--gray-200);
+      border-top: none;
+    }
+
+    /* ===== Profile ===== */
+    .profile {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 20px 24px;
+      background: var(--gray-50);
+      border-radius: var(--radius);
+      margin-bottom: 24px;
+      border: 1px solid var(--gray-200);
+    }
+    .profile-name {
+      font-family: 'Sheikh Hasina', serif;
+      font-size: clamp(22px, 4vw, 32px);
+      color: var(--gray-900);
+      line-height: 1.2;
+    }
+    .profile-id {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 14px;
+      color: var(--gray-500);
+      background: #fff;
+      padding: 3px 16px;
+      border-radius: 100px;
+      border: 1px solid var(--gray-200);
+    }
+    .profile-avatar {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: var(--gray-200);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 26px;
+      color: var(--gray-500);
+      flex-shrink: 0;
+    }
+
+    /* ===== Info Grid ===== */
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      background: var(--gray-50);
+      border-radius: 8px;
+      border: 1px solid var(--gray-100);
+      transition: var(--transition);
+    }
+    .item:hover {
+      background: #fff;
+      border-color: var(--gray-200);
+    }
+    .item.full {
+      grid-column: 1 / -1;
+    }
+    .item-icon {
+      width: 30px;
+      height: 30px;
+      border-radius: 6px;
+      background: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--gray-500);
+      font-size: 14px;
+      flex-shrink: 0;
+      border: 1px solid var(--gray-200);
+    }
+    .item-label {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--gray-400);
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      display: block;
+    }
+    .item-value {
+      font-size: 15px;
+      color: var(--gray-900);
+      font-weight: 500;
+    }
+    .item-value.empty {
+      color: var(--gray-300);
+      font-weight: 400;
+      font-style: italic;
+    }
+
+    /* ===== Blood Group Badge ===== */
+    .blood-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #fef2f2;
+      color: var(--danger);
+      padding: 2px 14px 2px 10px;
+      border-radius: 100px;
+      font-size: 15px;
+      font-weight: 600;
+      border: 1px solid #fecaca;
+    }
+    .blood-badge i {
+      font-size: 13px;
+    }
+    .blood-badge .label {
+      font-weight: 400;
+      color: var(--gray-500);
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    /* ===== Status Badge ===== */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 12px;
+      border-radius: 100px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+    .badge.success { background: #dcfce7; color: #166534; }
+    .badge.warning { background: #fef3c7; color: #92400e; }
+    .badge.danger { background: #fee2e2; color: #991b1b; }
+    .badge.info { background: #dbeafe; color: #1e40af; }
+    .badge i { font-size: 10px; }
+
+    /* ===== Blocked ===== */
+    .blocked {
+      text-align: center;
+      padding: 48px 24px;
+      background: #fef2f2;
+      border-radius: var(--radius);
+      border: 1px solid #fecaca;
+    }
+    .blocked-icon {
+      font-size: 64px;
+      display: block;
+      margin-bottom: 16px;
+    }
+    .blocked-title {
+      font-family: 'Sheikh Hasina', serif;
+      font-size: clamp(28px, 5vw, 38px);
+      color: var(--danger-dark);
+    }
+    .blocked-sub {
+      font-size: clamp(16px, 3vw, 20px);
+      color: var(--danger);
+      margin: 4px 0 16px;
+    }
+    .blocked-msg {
+      background: #fff;
+      padding: 12px 24px;
+      border-radius: 8px;
+      display: inline-block;
+      font-size: 14px;
+      color: var(--gray-600);
+      border-left: 3px solid var(--danger);
+    }
+
+    /* ===== Not Found ===== */
+    .not-found {
+      text-align: center;
+      padding: 40px 24px;
+      background: #fffbeb;
+      border-radius: var(--radius);
+      border: 1px solid #fde68a;
+    }
+    .not-found i {
+      font-size: 56px;
+      color: #d97706;
+      margin-bottom: 12px;
+    }
+    .not-found h2 {
+      font-size: 24px;
+      color: #92400e;
+    }
+    .not-found p {
+      color: var(--gray-600);
+      margin-top: 4px;
+    }
+    .not-found .sub {
+      font-size: 13px;
+      color: var(--gray-400);
+      margin-top: 8px;
+    }
+
+    /* ===== Home Link ===== */
+    .home-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--gray-500);
+      padding: 10px 24px;
+      border-radius: 100px;
+      text-decoration: none;
+      font-size: 15px;
+      font-weight: 500;
+      border: 1px solid var(--gray-200);
+      transition: var(--transition);
+      margin-top: 16px;
+      background: #fff;
+    }
+    .home-link:hover {
+      border-color: var(--gray-300);
+      color: var(--gray-900);
+      background: var(--gray-50);
+    }
+
+    /* ===== Floating Home ===== */
+    .floating-home {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: #fff;
+      color: var(--gray-600);
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-decoration: none;
+      font-size: 20px;
+      border: 1px solid var(--gray-200);
+      box-shadow: var(--shadow);
+      transition: var(--transition);
+      z-index: 999;
+    }
+    .floating-home:hover {
+      border-color: var(--gray-300);
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-hover);
+    }
+
+    /* ===== Mobile Bottom Bar ===== */
+    .bottom-bar {
+      display: none;
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: #fff;
+      padding: 6px 0 10px;
+      border-top: 1px solid var(--gray-200);
+      z-index: 1000;
+      justify-content: space-around;
+      align-items: center;
+    }
+    .bottom-bar a {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-decoration: none;
+      color: var(--gray-400);
+      font-size: 10px;
+      font-weight: 500;
+      gap: 2px;
+      transition: var(--transition);
+    }
+    .bottom-bar a i {
+      font-size: 18px;
+      color: var(--gray-400);
+    }
+    .bottom-bar a:hover {
+      color: var(--gray-600);
+    }
+    .bottom-bar a:hover i {
+      color: var(--gray-600);
+    }
+
+    /* ===== Loading ===== */
+    .loading {
+      text-align: center;
+      padding: 32px 20px;
+    }
+    .spinner {
+      width: 36px;
+      height: 36px;
+      border: 2px solid var(--gray-200);
+      border-top-color: var(--gray-600);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      margin: 0 auto 12px;
+    }
+    .loading p {
+      color: var(--gray-400);
+      font-size: 14px;
+    }
+
+    /* ===== Responsive ===== */
+    @media (max-width: 768px) {
+      body { padding: 12px; }
+      .header { padding: 18px 16px 14px; }
+      .student-card { padding: 16px; }
+      .grid { grid-template-columns: 1fr; }
+      .profile {
+        flex-direction: column;
+        text-align: center;
+        padding: 16px;
+        gap: 12px;
+      }
+      .profile-avatar { width: 48px; height: 48px; font-size: 22px; }
+      .item { padding: 10px 14px; }
+      .floating-home { display: none; }
+      .bottom-bar { display: flex; }
+      .overlay-card { padding: 28px 20px; }
+    }
+
+    @media (min-width: 769px) {
+      .bottom-bar { display: none; }
+      .floating-home { display: flex; }
+    }
+
+    @media (max-width: 480px) {
+      .profile-name { font-size: 20px; }
+      .item-value { font-size: 14px; }
+      .item { padding: 8px 12px; gap: 10px; }
+      .item-icon { width: 26px; height: 26px; font-size: 12px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="main-container">
+    <!-- Header -->
+    <div class="header">
+      <img src="png/logo.png" alt="লোগো" class="logo" onerror="this.style.display='none'">
+      <div class="header-title">ভেরিফিকেশন সিস্টেম</div>
+      <div class="header-sub">শিক্ষার্থী আইডি কার্ড</div>
+      <div id="yearDisplay" class="year-badge">শিক্ষাবর্ষ: লোড হচ্ছে...</div>
+    </div>
+
+    <!-- Content -->
+    <div class="student-card">
+      <div id="studentInfo">
+        <div class="loading">
+          <div class="spinner"></div>
+          <p>তথ্য লোড হচ্ছে...</p>
+        </div>
+      </div>
+      <div style="text-align: center;">
+        <a href="index.html" class="home-link">
+          <i class="fas fa-arrow-left"></i> ফিরে যান
+        </a>
+      </div>
+    </div>
+
+    <!-- Bottom Bar -->
+    <div class="bottom-bar">
+      <a href="index.html#home"><i class="fas fa-home"></i> হোম</a>
+      <a href="index.html#vorti"><i class="fas fa-pen"></i> ভর্তি</a>
+      <a href="index.html#gallery"><i class="fas fa-image"></i> গ্যালারি</a>
+      <a href="index.html#contact"><i class="fas fa-phone"></i> যোগাযোগ</a>
+    </div>
+
+    <!-- Floating Home -->
+    <a href="index.html" class="floating-home" title="হোম">
+      <i class="fas fa-home"></i>
+    </a>
+
+    <!-- Status Overlay -->
+    <div id="statusOverlay" class="status-overlay">
+      <div class="overlay-card">
+        <span class="overlay-main" id="overlayMain"></span>
+        <span class="overlay-sub" id="overlaySub"></span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function() {
+      const ACADEMIC_YEAR_SHEETS = {
+        "১৪৪৭-৪৮ হিজরী/২০২৬-২৭ ঈসায়ী": "1_JnCfyQSiKoBBdSK6BdY_Z7KeTqa-zpTwOPK7CjxBk0",
+        "১৪৪৫-৪৬ হিজরী/২০২৫-২৬ ঈসায়ী": "1B6BzLPVKGeRosVm0p_DbMk5tssfuQTWbSF5W97-31-A"
+      };
+
+      const params = new URLSearchParams(window.location.search);
+      let yearParam = params.get('year');
+      const jamat = params.get('jamat');
+      const reg = params.get('reg') ? parseInt(params.get('reg')) : null;
+      const roll = params.get('roll') ? parseInt(params.get('roll')) : null;
+
+      const overlay = document.getElementById('statusOverlay');
+      const overlayMain = document.getElementById('overlayMain');
+      const overlaySub = document.getElementById('overlaySub');
+      const infoDiv = document.getElementById('studentInfo');
+      const yearDiv = document.getElementById('yearDisplay');
+
+      function bnToEnNumber(str) {
+        if(!str) return str;
+        const bn = '০১২৩৪৫৬৭৮৯';
+        const en = '0123456789';
+        return str.replace(/[০-৯]/g, d => en[bn.indexOf(d)]);
+      }
+
+      let selectedSheetId = null;
+      let matchedYearKey = null;
+
+      if (!yearParam || !jamat || !reg) {
+        infoDiv.innerHTML = `
+          <div class="not-found">
+            <i class="fas fa-exclamation-triangle"></i>
+            <h2>সঠিক তথ্য দিন</h2>
+            <p>year, jamat, reg প্রয়োজন</p>
+            <div class="sub">roll নম্বর ঐচ্ছিক</div>
+          </div>
+        `;
+        yearDiv.innerHTML = 'শিক্ষাবর্ষ: পাওয়া যায়নি';
+        overlay.classList.remove('active', 'warning');
+        return;
+      }
+
+      const userYearClean = yearParam.trim();
+      let foundKey = null;
+      for (let key in ACADEMIC_YEAR_SHEETS) {
+        if (key === userYearClean || key.includes(userYearClean) || userYearClean.includes(key)) {
+          foundKey = key;
+          break;
+        }
+      }
+      if (!foundKey) {
+        const normalizedUser = userYearClean.replace(/\s/g, '').toLowerCase();
+        for (let key in ACADEMIC_YEAR_SHEETS) {
+          const normalizedKey = key.replace(/\s/g, '').toLowerCase();
+          if (normalizedUser === normalizedKey || normalizedKey.includes(normalizedUser) || normalizedUser.includes(normalizedKey)) {
+            foundKey = key;
+            break;
+          }
+        }
+      }
+
+      if (foundKey) {
+        matchedYearKey = foundKey;
+        selectedSheetId = ACADEMIC_YEAR_SHEETS[foundKey];
+      } else {
+        infoDiv.innerHTML = `
+          <div class="not-found">
+            <i class="fas fa-calendar-times"></i>
+            <h2>শিক্ষাবর্ষ পাওয়া যায়নি</h2>
+            <p>"${escapeHtml(yearParam)}"</p>
+            <div class="sub">উপলব্ধ: ${Object.keys(ACADEMIC_YEAR_SHEETS).join(', ')}</div>
+          </div>
+        `;
+        yearDiv.innerHTML = `শিক্ষাবর্ষ: ${escapeHtml(yearParam)} (অমিল)`;
+        overlay.classList.remove('active', 'warning');
+        return;
+      }
+
+      yearDiv.innerHTML = `শিক্ষাবর্ষ: ${matchedYearKey}`;
+
+      const sheetURL = `https://docs.google.com/spreadsheets/d/${selectedSheetId}/gviz/tq?tqx=out:json`;
+
+      fetch(sheetURL)
+        .then(res => res.text())
+        .then(text => {
+          const json = JSON.parse(text.substr(47).slice(0, -2));
+          const rows = json.table.rows;
+          const data = rows.map(row => {
+            const obj = {};
+            json.table.cols.forEach((col, i) => {
+              if (col.label) {
+                obj[col.label.trim()] = row.c[i] ? row.c[i].v : '';
+              }
+            });
+            return obj;
+          });
+
+          const student = data.find(s => {
+            const sheetYear = s['শিক্ষাবর্ষ'] ? s['শিক্ষাবর্ষ'].toString().trim() : '';
+            const matchYear = (sheetYear === matchedYearKey) || (sheetYear === yearParam);
+            const matchJamat = s['জামাত'] === jamat;
+            const matchReg = parseInt(s['রেজিস্ট্রেশন/আইডি']) === reg;
+            return matchYear && matchJamat && matchReg;
+          });
+
+          if (!student) {
+            infoDiv.innerHTML = `
+              <div class="not-found">
+                <i class="fas fa-search"></i>
+                <h2>শিক্ষার্থী পাওয়া যায়নি</h2>
+                <p>${matchedYearKey}</p>
+                <p style="margin-top:8px;">জামাত: ${escapeHtml(jamat)}<br>রেজি: ${escapeHtml(reg)}</p>
+                ${roll ? `<div class="sub">রোল: ${roll} (ঐচ্ছিক)</div>` : ''}
+              </div>
+            `;
+            overlay.classList.remove('active', 'warning');
+            return;
+          }
+
+          const getBadgeClass = (status) => {
+            if (!status) return 'info';
+            if (status.includes('ত্যাগকৃত') || status.includes('বহিষ্কৃত') || status.includes('বাতিল')) return 'danger';
+            if (status.includes('অধ্যয়নরত')) return 'success';
+            if (status.includes('অপেক্ষমাণ')) return 'warning';
+            return 'info';
+          };
+
+          const getBadgeIcon = (status) => {
+            if (!status) return 'fa-circle-info';
+            if (status.includes('ত্যাগকৃত') || status.includes('বহিষ্কৃত') || status.includes('বাতিল')) return 'fa-circle-exclamation';
+            if (status.includes('অধ্যয়নরত')) return 'fa-circle-check';
+            if (status.includes('অপেক্ষমাণ')) return 'fa-clock';
+            return 'fa-circle-info';
+          };
+
+          const blood = student['রক্তের গ্রুপ'] || '';
+          const bloodHTML = blood ? `
+            <span class="blood-badge">
+              <i class="fas fa-droplet"></i>
+              <span class="label">রক্তের গ্রুপ</span>
+              ${escapeHtml(blood)}
+            </span>
+          ` : `<span class="item-value empty">উল্লেখ নেই</span>`;
+
+          const eq = student['সমমান'] || '';
+          const eqHTML = eq ? escapeHtml(eq) : `<span class="item-value empty">উল্লেখ নেই</span>`;
+
+          const status = student['শিক্ষার্থী ধরণ/স্ট্যাটাস'] || '';
+          const statusLabel = status ? status.split(/[-–—]/)[0] : '';
+
+          const fullHTML = `
+            <div class="profile">
+              <div>
+                <div class="profile-name">${escapeHtml(student['শিক্ষার্থীর নাম'] || 'উল্লেখ নেই')}</div>
+                <div class="profile-id">
+                  <i class="fas fa-qrcode"></i>
+                  ${escapeHtml(student['রেজিস্ট্রেশন/আইডি'] || 'N/A')}
+                </div>
+              </div>
+              <div class="profile-avatar">
+                <i class="fas fa-user-graduate"></i>
+              </div>
+            </div>
+
+            <div class="grid">
+              <div class="item">
+                <div class="item-icon"><i class="fas fa-id-card"></i></div>
+                <div>
+                  <span class="item-label">রেজিস্ট্রেশন</span>
+                  <div class="item-value">${escapeHtml(student['রেজিস্ট্রেশন/আইডি'] || 'উল্লেখ নেই')}</div>
+                </div>
+              </div>
+
+              <div class="item">
+                <div class="item-icon"><i class="fas fa-sort-numeric-up"></i></div>
+                <div>
+                  <span class="item-label">রোল নম্বর</span>
+                  <div class="item-value">${escapeHtml(student['রোল নম্বর'] || 'উল্লেখ নেই')}</div>
+                </div>
+              </div>
+
+              <div class="item">
+                <div class="item-icon"><i class="fas fa-user-tie"></i></div>
+                <div>
+                  <span class="item-label">পিতার নাম</span>
+                  <div class="item-value">${escapeHtml(student['পিতার নাম'] || 'উল্লেখ নেই')}</div>
+                </div>
+              </div>
+
+              <div class="item">
+                <div class="item-icon"><i class="fas fa-graduation-cap"></i></div>
+                <div>
+                  <span class="item-label">মারহালা</span>
+                  <div class="item-value">${escapeHtml(student['মারহালা'] || 'উল্লেখ নেই')}</div>
+                </div>
+              </div>
+
+              <div class="item">
+                <div class="item-icon"><i class="fas fa-users"></i></div>
+                <div>
+                  <span class="item-label">জামাত/শ্রেণী</span>
+                  <div class="item-value">${escapeHtml(student['জামাত/শ্রেণী'] || 'উল্লেখ নেই')}</div>
+                </div>
+              </div>
+
+              <div class="item">
+                <div class="item-icon"><i class="fas fa-tag"></i></div>
+                <div>
+                  <span class="item-label">সমমান</span>
+                  <div class="item-value">${eqHTML}</div>
+                </div>
+              </div>
+
+              <div class="item">
+                <div class="item-icon"><i class="fas fa-phone"></i></div>
+                <div>
+                  <span class="item-label">মোবাইল (মা/বোন)</span>
+                  <div class="item-value">${escapeHtml(student['মোবাইল (মা)'] || 'উল্লেখ নেই')}</div>
+                </div>
+              </div>
+
+              <div class="item">
+                <div class="item-icon"><i class="fas fa-phone"></i></div>
+                <div>
+                  <span class="item-label">মোবাইল (বাবা/ভাই)</span>
+                  <div class="item-value">${escapeHtml(student['মোবাইল (বাবা/ভাই)'] || 'উল্লেখ নেই')}</div>
+                </div>
+              </div>
+
+              <div class="item">
+                <div class="item-icon"><i class="fas fa-calendar-alt"></i></div>
+                <div>
+                  <span class="item-label">জন্ম নিবন্ধন</span>
+                  <div class="item-value">${escapeHtml(student['জন্ম নিবন্ধন নাম্বার'] || 'উল্লেখ নেই')}</div>
+                </div>
+              </div>
+
+              <div class="item">
+                <div class="item-icon"><i class="fas fa-cake-candles"></i></div>
+                <div>
+                  <span class="item-label">জন্ম তারিখ</span>
+                  <div class="item-value">${escapeHtml(student['জন্ম তারিখ'] || 'উল্লেখ নেই')}</div>
+                </div>
+              </div>
+
+              <div class="item full">
+                <div class="item-icon"><i class="fas fa-map-pin"></i></div>
+                <div>
+                  <span class="item-label">ঠিকানা</span>
+                  <div class="item-value">${escapeHtml(student['ঠিকানা'] || 'উল্লেখ নেই')}</div>
+                </div>
+              </div>
+
+              <div class="item">
+                <div class="item-icon"><i class="fas fa-droplet"></i></div>
+                <div>
+                  <span class="item-label">রক্তের গ্রুপ</span>
+                  <div class="item-value">${bloodHTML}</div>
+                </div>
+              </div>
+
+              <div class="item">
+                <div class="item-icon"><i class="fas fa-info-circle"></i></div>
+                <div>
+                  <span class="item-label">শিক্ষার্থী ধরণ</span>
+                  <div class="item-value">
+                    ${escapeHtml(status || 'উল্লেখ নেই')}
+                    ${status ? ` <span class="badge ${getBadgeClass(status)}"><i class="fas ${getBadgeIcon(status)}"></i> ${escapeHtml(statusLabel)}</span>` : ''}
+                  </div>
+                </div>
+              </div>
+            </div>
+          `;
+
+          // Overlay
+          let mainStatus = status;
+          let subStatus = '';
+          if (status.includes('–')) { let parts = status.split('–'); mainStatus = parts[0].trim(); subStatus = parts[1] ? parts[1].trim() : ''; }
+          else if (status.includes('—')) { let parts = status.split('—'); mainStatus = parts[0].trim(); subStatus = parts[1] ? parts[1].trim() : ''; }
+          else if (status.includes('-')) { let parts = status.split('-'); mainStatus = parts[0].trim(); subStatus = parts[1] ? parts[1].trim() : ''; }
+          if (status.includes('সাময়িক ভর্তি বাতিল')) { mainStatus = 'সাময়িক ভর্তি বাতিল'; subStatus = ''; }
+
+          overlayMain.innerText = mainStatus || 'স্ট্যাটাস';
+          overlaySub.innerText = subStatus || '';
+          const isWarning = status.includes('ত্যাগকৃত') || status.includes('বহিষ্কৃত') || status.includes('সাময়িক ভর্তি বাতিল');
+          overlay.classList.add('active');
+          if (isWarning) {
+            overlay.classList.add('warning');
+            overlaySub.classList.add('warning-sub');
+          } else {
+            overlay.classList.remove('warning');
+            overlaySub.classList.remove('warning-sub');
+          }
+
+          if (isWarning) {
+            infoDiv.innerHTML = `
+              <div class="blocked">
+                <span class="blocked-icon">⛔</span>
+                <div class="blocked-title">${escapeHtml(mainStatus)}</div>
+                <div class="blocked-sub">${escapeHtml(subStatus) || 'অনুমতি নেই'}</div>
+                <div class="blocked-msg"><i class="fas fa-lock"></i> বিস্তারিত তথ্য দেখা যাবে না</div>
+              </div>
+            `;
+          } else {
+            infoDiv.innerHTML = fullHTML;
+            setTimeout(() => { overlay.classList.remove('active', 'warning'); }, 800);
+          }
+        })
+        .catch(() => {
+          infoDiv.innerHTML = `
+            <div class="not-found">
+              <i class="fas fa-exclamation-circle"></i>
+              <h2>সংযোগ সমস্যা</h2>
+              <p>আবার চেষ্টা করুন</p>
+            </div>
+          `;
+          overlay.classList.remove('active', 'warning');
+        });
+
+      function escapeHtml(str) {
+        if (!str) return '';
+        return String(str).replace(/[&<>]/g, function(m) {
+          if (m === '&') return '&amp;';
+          if (m === '<') return '&lt;';
+          if (m === '>') return '&gt;';
+          return m;
+        });
+      }
+    })();
+  </script>
+</body>
+</html>

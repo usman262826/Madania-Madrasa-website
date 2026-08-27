@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8">
+  <title>ওস্তাদ ভেরিফিকেশন</title>
+   <link href="https://fonts.maateen.me/kalpurush/font.css" rel="stylesheet">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Custom Fonts -->
+  <style>
+    
+    @font-face {
+      font-family: 'Qayyum Book';
+      src: url('/ফন্ট/Qayyum Book.ttf') format('woff2'),
+          url('/fonts/Qayyum-Book.ttf') format('truetype');
+      font-weight: normal;
+      font-style: normal;
+    }
+
+    @font-face {
+      font-family: 'Junudullah Zami';
+      src: url('/ফন্ট/FN Junudullah Zami.ttf') format('woff2'),
+          url('/fonts/FN-Junudullah-Zami.ttf') format('truetype');
+      font-weight: normal;
+      font-style: normal;
+    }
+
+    @font-face {
+      font-family: 'Sheikh Hasina';
+      src: url('ফন্ট/Li Sheikh Hasina 2 Unicode.ttf') format('woff2'),
+          url('/fonts/Li-Sheikh-Hasina.ttf') format('truetype');
+      font-weight: normal;
+      font-style: normal;
+    }
+    @font-face {
+      font-family: 'Bornomala';
+      src: url('ফন্ট/Bornomala-Regular.ttf') format('woff2'),
+          url('ফন্ট/Bornomala-Regular.ttf') format('truetype');
+      font-weight: normal;
+      font-style: normal;
+    }
+
+    /* উদাহরণ ব্যবহার */
+    body {
+      font-family: 'Qayyum Book';
+    }
+
+    body {
+      margin: 0;
+      background: linear-gradient(to bottom, #eefaf7, #dcf4f0);
+      font-family: 'Qayyum book', 'Kalpurush';
+      color: #002b29;
+    }
+
+    @keyframes fadeInUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes footerFadeIn { from { opacity:0; transform: scale(0.95) translateY(20px);} to {opacity:1; transform: scale(1) translateY(0);} }
+
+    /* ============================= */
+    /* নাম ব্লক */
+    /* ============================= */
+    .name-block {
+      text-align: center;
+      margin: 20px 10px 15px 10px;
+    }
+    .title-block {
+      font-family: 'Junudullah Zami';
+      font-size: 18px;
+      color: #000000;
+      font-weight: normal;
+      margin-bottom: -10px;
+    }
+    .student-name {
+      text-align: center;
+      margin: 10px auto 25px auto;
+      font-size: 28px;
+      font-family: 'Sheikh Hasina';
+      color: #ffffff;
+      background: linear-gradient(90deg, #007f2c, rgb(0, 59, 18));
+      border-radius: 5px;
+      padding: 10px 25px;
+      display: block;
+      max-width: 700px;
+      box-sizing: border-box;
+      opacity: 0;
+      animation: fadeInUp 0.8s ease forwards;
+    }
+    .teacher-type {
+      font-family: 'Bornomala';
+      font-size: 14px;
+      margin-top: -20px;
+      color: #00476e;
+    }
+
+    /* ============================= */
+    /* কার্ড */
+    /* ============================= */
+    .card {
+      max-width: 700px;
+      background: #fff;
+      margin: 20px auto;
+      border-radius: 15px;
+      padding: 25px 30px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+      overflow: hidden;
+      animation: fadeIn 1.3s ease-in-out;
+      text-align: left;
+    }
+    .row {
+      display: flex;
+      align-items: flex-start;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+      padding: 6px 18px;
+      border-radius: 8px;
+      border: 1px solid #fce5e5;
+      background: linear-gradient(90deg, #ffffff, #f0fffa);
+      box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+      transition: transform 0.25s ease, box-shadow 0.25s ease, background 0.25s ease;
+      opacity: 0;
+      animation: fadeInUp 0.6s ease forwards;
+    }
+    .label {
+      flex: 0 0 150px;
+      font-weight: bold;
+      font-size: 19px;
+      color: #016422;
+      font-family: 'Bornomala';
+      margin-right: 12px;
+      white-space: nowrap;
+      position: relative;
+    }
+    .label::after {
+      content: ":";
+      position: absolute;
+      right: -12px;
+      color: #8b0303;
+    }
+    .value {
+      flex: 1;
+      font-size: 19px;
+      color: #000000;
+      margin-left: 18px; /* value টাকে ডানদিকে চাপানোর জন্য */
+      white-space: normal;
+      word-break: break-word;
+    }
+    .value.empty {
+      flex: 1;
+      margin-left: 18px; /* value টাকে ডানদিকে চাপানোর জন্য */
+      color: #888;
+      font-style: italic;
+      font-family: 'kalpurush';
+      font-size: 15px;
+      word-break: break-word;
+      white-space: normal;
+    }
+    .row:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 18px rgba(0,0,0,0.12);
+      background: linear-gradient(90deg, #d0f0e8, #ffffff);
+    }
+
+    /* ============================= */
+    /* হেডার ও ফুটার */
+    /* ============================= */
+    .header img.logo {
+      width: 20%;
+      max-width: 680px;
+      height: auto;
+      display: block;
+      margin: 30px auto 20px;
+      opacity: 0;
+      animation: footerFadeIn 1s ease forwards 1.2s;
+    }
+    footer {
+      text-align: center;
+      margin-top: 30px;
+    }
+    footer img {
+      width: 82%;
+      max-width: 680px;
+      height: auto;
+      display: block;
+      margin: 0 auto 80px;
+      opacity: 0;
+      animation: footerFadeIn 1s ease forwards 1.2s;
+    }
+
+    /* ============================= */
+    /* শিক্ষাবর্ষ ফুটার */
+    /* ============================= */
+    .year-footer {
+      text-align: center;
+      margin-top: 20px;
+      font-size: 18px;
+      font-family: 'Kalpurush', sans-serif;
+      color: #004d40;
+    }
+
+    /* ============================= */
+    /* রেসপন্সিভ */
+    /* ============================= */
+    @media (max-width: 767px){
+      .value { white-space: normal; font-size: 17px; }
+      .student-name { font-size: 24px;}
+      .label { flex: 0 0 120px; font-size: 17px; }
+    }
+        /* মোবাইল বটম বার */
+    .mobile-bottom-bar {
+        display: none;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: white;
+        padding: 10px 5px;
+        box-shadow: 0 -5px 20px rgba(0, 0, 0, 0.15);
+        z-index: 1000;
+        justify-content: space-around;
+        align-items: center;
+        border-top: 3px solid #007c7c;
+    }
+
+    .mobile-bottom-bar a {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-decoration: none;
+        color: #00464e;
+        font-size: 12px;
+        font-weight: bold;
+        gap: 5px;
+    }
+
+    .mobile-bottom-bar a i {
+        font-size: 20px;
+        color: #007c7c;
+    }
+
+    /* ফুটার */
+    .footer {
+      font-family: 'Kalpurush', 'Qayyum Book', sans-serif;
+      text-align: center;
+      margin-top: 40px;
+      color: rgba(24, 0, 0, 0.8);
+      font-size: 14px;
+      animation: fadeInUp 0.8s ease forwards 0.5s;
+    }
+    .footer img {
+      max-width: 100%;
+      border-radius: 20px;
+      margin-bottom: 15px;
+    }
+
+    /* লোডিং স্পিনার */
+    .loading-spinner {
+      text-align: center;
+      padding: 40px;
+    }
+    .spinner {
+      width: 50px;
+      height: 50px;
+      border: 5px solid #f3f3f3;
+      border-top: 5px solid var(--primary);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 20px;
+    }
+    
+        /* Responsive */
+        @media (max-width: 992px) {
+            .form-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+            .info-grid {
+                grid-template-columns: 1fr;
+            }
+            .action-buttons {
+                flex-direction: column;
+            }
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+            .section-title h1 {
+                font-size: 28px;
+            }
+            .selected-exam-badge {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .change-exam-btn {
+                width: 100%;
+                justify-content: center;
+            }
+            .floating-home {
+                display: none; /* বড় স্ক্রিনে দেখাবে */
+            }
+            .mobile-bottom-bar {
+                display: flex; /* মোবাইলে দেখাবে */
+            }
+        }
+
+        @media (max-width: 480px) {
+            .student-name {
+                font-size: 22px;
+            }
+            .status-main {
+                font-size: 18px;
+            }
+        }
+
+        /* বড় স্ক্রিনে মোবাইল বার লুকাবে */
+        @media (min-width: 769px) {
+            .mobile-bottom-bar {
+                display: none;
+            }
+            .floating-home {
+                display: flex;
+            }
+        }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <img src="png/logo.png" alt="লোগো" class="logo">
+  </div>
+
+  <!-- নাম ব্লক -->
+  <div class="name-block">
+    <div class="title-block" id="titleBlock"></div>
+    <div class="student-name" id="studentName"></div>
+    <div class="teacher-type" id="teacherType"></div>
+  </div>
+
+  <!-- কার্ড -->
+  <div class="card" id="studentCard">
+    <div id="studentInfo">🔄 তথ্য লোড হচ্ছে...</div>
+    <div id="yearDisplay" class="year-footer"></div>
+  </div>
+      <!-- মোবাইল বটম বার - শুধু মোবাইলে -->
+      <div class="mobile-bottom-bar">
+          <a href="index.html#home"><i class="fas fa-home"></i> হোম</a>
+          <a href="index.html#vorti"><i class="fas fa-pen"></i> ভর্তি</a>
+          <a href="index.html#gallery"><i class="fas fa-image"></i> গ্যালারি</a>
+          <a href="index.html#contact"><i class="fas fa-phone"></i> যোগাযোগ</a>
+      </div>
+  <!-- ভাসমান হোম বাটন -->
+  <a href="index.html" class="floating-home" title="মূল পেইজে ফিরে যান">
+    <i class="fas fa-home"></i>
+  </a>
+  <footer>
+    <img src="png/madrasa head.png" alt="মাদরাসা হেডার">
+  </footer>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const yearParam = params.get('year');
+    const idParam = params.get('id');
+
+    const sheetURL = 'https://opensheet.elk.sh/1Vzq9bRiJKQHJ4j0SwoOw9P74Ad9k6wvajJogAkgBkBU/Sheet1';
+
+    fetch(sheetURL)
+      .then(res => res.json())
+      .then(data => {
+        const ustad = data.find(s =>
+          s['শিক্ষা বর্ষ'] === yearParam && s['আইডি নং'] === idParam
+        );
+
+        const infoDiv = document.getElementById('studentInfo');
+        const titleDiv = document.getElementById('titleBlock');
+        const nameDiv = document.getElementById('studentName');
+        const typeDiv = document.getElementById('teacherType');
+        const yearDiv = document.getElementById('yearDisplay');
+
+        if(!ustad){
+          infoDiv.innerHTML = '<div class="not-found">⚠️ কোনো তথ্য পাওয়া যায়নি।</div>';
+          return;
+        }
+
+        // নাম ব্লক
+        titleDiv.innerText = ustad['পদবী'] || '';
+        nameDiv.innerText = ustad['পূর্ণ নাম'] || '';
+        typeDiv.innerText = ustad['পদ/ধরন'] || '';
+
+        // কার্ড তথ্য
+          let rows = '';
+
+        
+        // বাকি সব ফিল্ড
+        rows += `<div class="row"><div class="label">এনআইডি নং</div><div class="value">${ustad['এনআইডি নং'] || '<span class="value empty">উল্লেখ নেই</span>'}</div></div>`;
+        // জন্ম নিবন্ধন নং (আগের মতো)
+        if(ustad['জন্ম নিবন্ধন নং'])  
+            rows += `<div class="row"><div class="label">জন্ম নিবন্ধন নং</div><div class="value">${ustad['জন্ম নিবন্ধন নং']}</div></div>`;
+        // জন্মতারিখ (fallback সহ)
+        if(ustad['জন্মতারিখ'])   rows += `<div class="row"><div class="label">জন্মতারিখ</div><div class="value">${ustad['জন্মতারিখ'] || '<span class="value empty">উল্লেখ নেই</span>'}</div></div>`;
+        rows += `<div class="row"><div class="label">রক্তের গ্রুপ</div><div class="value">${ustad['রক্তের গ্রুপ'] || '<span class="value empty">উল্লেখ নেই</span>'}</div></div>`;
+        rows += `<div class="row"><div class="label">মোবাইল</div><div class="value">${ustad['মোবাইল'] || '<span class="value empty">উল্লেখ নেই</span>'}</div></div>`;
+        rows += `<div class="row"><div class="label">স্ট্যাটাস</div><div class="value">${ustad['স্ট্যাটাস'] || '<span class="value empty">উল্লেখ নেই</span>'}</div></div>`;
+        rows += `<div class="row"><div class="label">ঠিকানা</div><div class="value">${ustad['ঠিকানা'] || '<span class="value empty">উল্লেখ নেই</span>'}</div></div>`;
+
+
+        infoDiv.innerHTML = rows;
+        yearDiv.innerText = ustad['শিক্ষা বর্ষ'] || '';
+      })
+      .catch(err=>{
+        console.error(err);
+        document.getElementById('studentInfo').innerHTML='<div class="not-found">⚠️ ডেটা লোড করতে সমস্যা হয়েছে।</div>';
+      });
+  </script>
+</body>
+</html>
