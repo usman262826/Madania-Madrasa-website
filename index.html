@@ -1335,25 +1335,159 @@
                     </div>
                     
                     <div class="form-group">
-                        <label>জামাত নির্বাচন করুন</label>
-                        <select id="jamat">
-                            <option value="">-- জামাত নির্বাচন করুন --</option>
-                            <option value="আতফাল (শিশু শ্রেণী)">আতফাল (শিশু শ্রেণী)</option>
-                            <option value="আওয়াল (১ম শ্রেণী)">আওয়াল (১ম শ্রেণী)</option>
-                            <option value="ছানী (২য় শ্রেণী)">ছানী (২য় শ্রেণী)</option>
-                            <option value="ছালেছ (৩য় শ্রেণী)">ছালেছ (৩য় শ্রেণী)</option>
-                            <option value="খুসুছি (ইবতেদায়ি রাবে)">খুসুছি (ইবতেদায়ি রাবে)</option>
-                            <option value="খামেস (ইবতেদায়ি খামেছ)">খামেস (ইবতেদায়ি খামেছ)</option>
-                            <option value="ইবতিদাইয়া - বিশেষ জামাত">ইবতিদাইয়া - বিশেষ জামাত</option>
-                            <option value="মিযান (মুতাওয়াসসিতাহ আওয়াল)">মিযান (মুতাওয়াসসিতাহ আওয়াল)</option>
-                            <option value="নাহবেমীর (মুতাওয়াসসিতাহ ছানি)">নাহবেমীর (মুতাওয়াসসিতাহ ছানি)</option>
-                            <option value="কুদূরী (সানাবিয়্যা আউয়াল)">কুদূরী (সানাবিয়্যা আউয়াল)</option>
-                            <option value="শরহে বেকায়া (সানাবিয়্যা ছানী)">শরহে বেকায়া (সানাবিয়্যা ছানী)</option>
-                            <option value="হেদায়া (ফজিলত আউয়াল)">হেদায়া (ফজিলত আউয়াল)</option>
-                            <option value="মেশকাত (ফজিলত ছানী)">মেশকাত (ফজিলত ছানী)</option>
-                            <option value="দাওরায়ে হাদিস (তাকমিল)">দাওরায়ে হাদিস (তাকমিল)</option>
-                        </select>
-                    </div>
+                    <label>জামাত নির্বাচন করুন</label>
+                    <select id="jamat">
+                        <option value="">-- জামাত লোড হচ্ছে... --</option>
+                    </select>
+                </div>
+
+                <script>
+                (function () {
+                    const SUPABASE_URL = 'https://fhgnqvyibgobdswqrgpe.supabase.co';
+                    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZoZ25xdnlpYmdvYmRzd3FyZ3BlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI0NjAzMzMsImV4cCI6MjEwODAzNjMzM30.EMPgvqFKx3UUDFcTbhgzw4AE04QuFukIiQchf2wFK6I';
+
+                    function buildFullJamatName(cls) {
+                    const config = cls.full_name_config || cls.fullNameConfig || {};
+                    if (config.customOverride && String(config.customOverride).trim()) {
+                        return String(config.customOverride).trim();
+                    }
+                    if (cls.full_name && String(cls.full_name).trim()) {
+                        return String(cls.full_name).trim();
+                    }
+                    if (cls.fullName && String(cls.fullName).trim()) {
+                        return String(cls.fullName).trim();
+                    }
+
+                    const marhalaText = String(cls.marhala_stage || cls.marhalaStage || cls.marhala_name || cls.marhalaName || '').trim();
+                    const jamatText = String(cls.name || '').trim();
+                    let eqText = String(cls.equivalent || '').trim();
+                    if (config.equivalentExcerptMode === 'custom' && config.equivalentExcerpt && String(config.equivalentExcerpt).trim()) {
+                        eqText = String(config.equivalentExcerpt).trim();
+                    }
+
+                    const order = Array.isArray(config.order) ? config.order : ['marhala', 'jamat', 'equivalent'];
+                    const includeMarhala = config.includeMarhala !== undefined ? !!config.includeMarhala : !!marhalaText;
+                    const includeJamat = config.includeJamat !== undefined ? !!config.includeJamat : !!jamatText;
+                    const includeEquivalent = config.includeEquivalent !== undefined ? !!config.includeEquivalent : !!eqText;
+                    const bracketTarget = config.bracketTarget || (eqText ? 'equivalent' : 'none');
+                    const separator = config.separator !== undefined ? config.separator : ' - ';
+
+                    const items = [];
+                    order.forEach(function (k) {
+                        if (k === 'marhala' && includeMarhala && marhalaText) {
+                        items.push({ text: marhalaText, inBracket: bracketTarget === 'marhala' || bracketTarget === 'marhala_jamat' || bracketTarget === 'marhala_equivalent' });
+                        } else if (k === 'jamat' && includeJamat && jamatText) {
+                        items.push({ text: jamatText, inBracket: bracketTarget === 'jamat' || bracketTarget === 'marhala_jamat' || bracketTarget === 'jamat_equivalent' });
+                        } else if (k === 'equivalent' && includeEquivalent && eqText) {
+                        items.push({ text: eqText, inBracket: bracketTarget === 'equivalent' || bracketTarget === 'jamat_equivalent' || bracketTarget === 'marhala_equivalent' });
+                        }
+                    });
+
+                    if (items.length === 0) return jamatText || marhalaText || '';
+
+                    const outTokens = [];
+                    let bracketAccumulator = [];
+                    items.forEach(function (it) {
+                        if (it.inBracket) {
+                        bracketAccumulator.push(it.text);
+                        } else {
+                        if (bracketAccumulator.length > 0) {
+                            outTokens.push('(' + bracketAccumulator.join(separator) + ')');
+                            bracketAccumulator = [];
+                        }
+                        outTokens.push(it.text);
+                        }
+                    });
+                    if (bracketAccumulator.length > 0) {
+                        outTokens.push('(' + bracketAccumulator.join(separator) + ')');
+                    }
+                    return outTokens.join(separator);
+                    }
+
+                    function getSortRank(cls) {
+                    const lid = String(cls.legacy_id || cls.id || '').trim();
+                    const match = lid.match(/^class-(\d+)$/i);
+                    if (match) return parseInt(match[1], 10);
+                    return 10000;
+                    }
+
+                    async function loadAcademicJamats() {
+                    const selectEl = document.getElementById('jamat');
+                    if (!selectEl) return;
+
+                    const prevValue = selectEl.value;
+                    const headers = {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+                        'Accept': 'application/json'
+                    };
+
+                    try {
+                        let rows = [];
+                        const res = await fetch(
+                        SUPABASE_URL + '/rest/v1/academic_classes?select=*&or=(is_active.eq.true,is_active.is.null)&order=created_at.asc',
+                        { method: 'GET', headers: headers }
+                        );
+
+                        if (res.ok) {
+                        const data = await res.json();
+                        if (Array.isArray(data)) rows = data;
+                        }
+
+                        // Fallback: যদি রিলেশনাল টেবিল খালি থাকে তবে madrasah_app_state থেকে নেবে
+                        if (rows.length === 0) {
+                        const fallbackRes = await fetch(
+                            SUPABASE_URL + '/rest/v1/madrasah_app_state?id=eq.acad_classes&select=data',
+                            { method: 'GET', headers: headers }
+                        );
+                        if (fallbackRes.ok) {
+                            const fbData = await fallbackRes.json();
+                            if (Array.isArray(fbData) && fbData[0] && Array.isArray(fbData[0].data)) {
+                            rows = fbData[0].data;
+                            }
+                        }
+                        }
+
+                        const activeRows = rows
+                        .map(function (r, idx) { return { row: r, idx: idx }; })
+                        .filter(function (item) { return item.row && item.row.is_active !== false && item.row.isActive !== false; })
+                        .sort(function (a, b) {
+                            const rankA = getSortRank(a.row);
+                            const rankB = getSortRank(b.row);
+                            if (rankA !== rankB) return rankA - rankB;
+                            return a.idx - b.idx;
+                        });
+
+                        selectEl.innerHTML = '<option value="">-- জামাত নির্বাচন করুন --</option>';
+
+                        const added = new Set();
+                        activeRows.forEach(function (item) {
+                        const fullName = buildFullJamatName(item.row);
+                        if (!fullName || added.has(fullName)) return;
+                        added.add(fullName);
+
+                        const opt = document.createElement('option');
+                        opt.value = fullName;
+                        opt.textContent = fullName;
+                        selectEl.appendChild(opt);
+                        });
+
+                        if (prevValue && added.has(prevValue)) {
+                        selectEl.value = prevValue;
+                        }
+                    } catch (err) {
+                        console.error('Jamat load error:', err);
+                        selectEl.innerHTML = '<option value="">-- জামাত নির্বাচন করুন --</option>';
+                    }
+                    }
+
+                    if (document.readyState === 'loading') {
+                    document.addEventListener('DOMContentLoaded', loadAcademicJamats);
+                    } else {
+                    loadAcademicJamats();
+                    }
+                })();
+                </script>
                     
                     <div class="form-group">
                         <label>রেজিস্ট্রেশন/আইডি নম্বর</label>
