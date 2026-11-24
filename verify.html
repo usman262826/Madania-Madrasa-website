@@ -47,7 +47,7 @@
       --gray-400: #a1a1aa;
       --gray-500: #71717a;
       --gray-600: #52525b;
-      --gray-700: #3f3f46;
+      --gray-700: #3f4646;
       --gray-800: #27272a;
       --gray-900: #18181b;
       --shadow: 0 1px 2px rgba(0,0,0,0.04), 0 8px 24px rgba(0,0,0,0.04);
@@ -574,16 +574,14 @@
 
   <script>
     (function() {
-      const ACADEMIC_YEAR_SHEETS = {
-        "১৪৪৭-৪৮ হিজরী/২০২৬-২৭ ঈসায়ী": "1_JnCfyQSiKoBBdSK6BdY_Z7KeTqa-zpTwOPK7CjxBk0",
-        "১৪৪৫-৪৬ হিজরী/২০২৫-২৬ ঈসায়ী": "1B6BzLPVKGeRosVm0p_DbMk5tssfuQTWbSF5W97-31-A"
-      };
+      const SUPABASE_URL = 'https://fhgnqvyibgobdswqrgpe.supabase.co';
+      const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZoZ25xdnlpYmdvYmRzd3FyZ3BlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI0NjAzMzMsImV4cCI6MjEwODAzNjMzM30.EMPgvqFKx3UUDFcTbhgzw4AE04QuFukIiQchf2wFK6I';
 
       const params = new URLSearchParams(window.location.search);
-      let yearParam = params.get('year');
-      const jamat = params.get('jamat');
-      const reg = params.get('reg') ? parseInt(params.get('reg')) : null;
-      const roll = params.get('roll') ? parseInt(params.get('roll')) : null;
+      const yearParam = (params.get('year') || '').trim();
+      const jamatParam = (params.get('jamat') || '').trim();
+      const regRaw = (params.get('reg') || '').trim();
+      const rollRaw = (params.get('roll') || '').trim();
 
       const overlay = document.getElementById('statusOverlay');
       const overlayMain = document.getElementById('overlayMain');
@@ -591,17 +589,176 @@
       const infoDiv = document.getElementById('studentInfo');
       const yearDiv = document.getElementById('yearDisplay');
 
-      function bnToEnNumber(str) {
-        if(!str) return str;
-        const bn = '০১২৩৪৫৬৭৮৯';
-        const en = '0123456789';
-        return str.replace(/[০-৯]/g, d => en[bn.indexOf(d)]);
+      function escapeHtml(str) {
+        if (str === null || str === undefined) return '';
+        return String(str).replace(/[&<>"]/g, function(m) {
+          if (m === '&') return '&amp;';
+          if (m === '<') return '&lt;';
+          if (m === '>') return '&gt;';
+          if (m === '"') return '&quot;';
+          return m;
+        });
       }
 
-      let selectedSheetId = null;
-      let matchedYearKey = null;
+      function bnToEnNumber(str) {
+        if (str === null || str === undefined) return '';
+        const bn = '০১২৩৪৫৬৭৮৯';
+        const en = '0123456789';
+        return String(str).replace(/[০-৯]/g, function(d) {
+          return en[bn.indexOf(d)];
+        });
+      }
 
-      if (!yearParam || !jamat || !reg) {
+      function enToBnNumber(str) {
+        if (str === null || str === undefined) return '';
+        const bn = '০১২৩৪৫৬৭৮৯';
+        const en = '0123456789';
+        return String(str).replace(/[0-9]/g, function(d) {
+          return bn[en.indexOf(d)];
+        });
+      }
+
+      function normalizeBengaliText(str) {
+        return String(str || '')
+          .replace(/\u09AF\u09BC/g, 'য়')
+          .replace(/\u09A1\u09BC/g, 'ড়')
+          .replace(/\u09A2\u09BC/g, 'ঢ়')
+          .replace(/\s+/g, ' ')
+          .trim();
+      }
+
+      function normalizeRegToken(val) {
+        if (val === null || val === undefined) return '';
+        const base = bnToEnNumber(String(val)).split('__ay_')[0].trim();
+        const digitsOnly = base.replace(/^0+/, '');
+        return digitsOnly || base;
+      }
+
+      function getCanonicalJamatId(raw) {
+        const str = normalizeBengaliText(raw);
+        if (!str) return '';
+        const clean = str.replace(/\s*\([^)]*তালিকায় নেই\)/g, '').trim();
+        if (clean === 'এ' || clean.toLowerCase() === 'a' || clean === 'এ শ্রেণি' || clean === 'এ জামাত') {
+          return 'class-9';
+        }
+        const norm = clean.toLowerCase();
+
+        if (norm.includes('দাওরা') || norm.includes('তাকমিল') || norm.includes('তাকমীল')) return 'class-13';
+        if (norm.includes('মেশকাত') || norm.includes('মিশকাত') || norm.includes('ফযীলাত ছানী') || norm.includes('ফজিলত ছানী')) return 'class-12';
+        if (((norm.includes('হেদায়া') || norm.includes('হেদায়েত')) && !norm.includes('হেদায়াতুন্নাহু') && !norm.includes('হেদায়েতুন্নাহু')) || norm.includes('জালালাইন') || norm.includes('ফযীলাত আওয়াল') || norm.includes('ফজিলত আওয়াল')) return 'class-11';
+        if (norm.includes('বেকায়া') || norm.includes('বেকায়া') || norm.includes('সানাবিয্যা ছানী') || norm.includes('সানাবিয়্যা ছানী') || norm.includes('সানাবিয়া উলিয়া') || norm.includes('সানাবিয়া উলিয়া')) return 'class-10';
+        if (norm.includes('কুদূরী') || norm.includes('কুদ্দুরী') || norm.includes('হেদায়াতুন্নাহু') || norm.includes('হেদায়েতুন্নাহু') || norm.includes('সানাবিয্যা আউয়াল') || norm.includes('সানাবিয়্যা আউয়াল') || norm.includes('সানাবিয়া আম্মাহ') || norm.includes('সানাবিয়া আম্মাহ')) return 'class-9';
+        if (norm.includes('নাহবেমীর') || norm.includes('নাহবে মীর') || norm.includes('মুতাওয়াসসিতাহ ছানী') || norm.includes('মুতাওয়াসসিতাহ ছানি') || norm.includes('মুতাওয়াসসিতাহ ছানী') || norm.includes('মুতাওয়াসসিতাহ ছানি')) return 'class-8';
+        if (norm.includes('মিযান') || norm.includes('মিয়ান') || norm.includes('মুতাওয়াসসিতাহ আওয়াল') || norm.includes('মুতাওয়াসসিতাহ আউয়াল') || norm.includes('মুতাওয়াসসিতাহ আওয়াল') || norm.includes('মুতাওয়াসসিতাহ আউয়াল')) return 'class-7';
+        if (norm.includes('খামেছ') || norm.includes('খামেস') || norm.includes('খামিস') || norm.includes('৫ম') || norm.includes('পঞ্চম')) return 'class-6';
+        if (norm.includes('রাবে') || norm.includes('৪র্থ') || norm.includes('চতুর্থ')) return 'class-5';
+        if (norm.includes('ছালেছ') || norm.includes('ছালেস') || norm.includes('সালেস') || norm.includes('৩য়') || norm.includes('তৃতীয়')) return 'class-4';
+        if (norm.includes('ছানী') || norm.includes('ছানি') || norm.includes('সানী') || norm.includes('২য়') || norm.includes('দ্বিতীয়')) return 'class-3';
+        if (norm.includes('আওয়াল') || norm.includes('আউয়াল') || norm.includes('১ম') || norm.includes('প্রথম')) return 'class-2';
+        if (norm.includes('রওজা') || norm.includes('াতফাল') || norm.includes('শিশু')) return 'class-1';
+        if (norm.includes('হিফজ') || norm.includes('হিফয')) return 'hifz';
+        if (norm.includes('নাযেরা') || norm.includes('নাজেরা')) return 'nazera';
+        if (norm.includes('নূরানী') || norm.includes('নুরানী')) return 'noorani';
+
+        return norm;
+      }
+
+      function isJamatMatch(row, targetJamat) {
+        if (!targetJamat) return true;
+        const extra = (row && row.additional_fields) || {};
+        const candidates = [
+          row.jamat_name,
+          row.full_jamat_name,
+          extra['জামাত'],
+          extra['জামাত/শ্রেণী'],
+          extra['পূর্ণ জামাতের নাম'],
+          extra['পূর্ণ জামাত'],
+          extra.class
+        ].filter(Boolean);
+
+        const targetNorm = normalizeBengaliText(targetJamat);
+        const targetCanonical = getCanonicalJamatId(targetNorm);
+
+        for (let i = 0; i < candidates.length; i++) {
+          const candNorm = normalizeBengaliText(candidates[i]);
+          if (!candNorm) continue;
+          if (candNorm === targetNorm || candNorm.toLowerCase() === targetNorm.toLowerCase()) {
+            return true;
+          }
+          const candCanonical = getCanonicalJamatId(candNorm);
+          if (candCanonical && targetCanonical && candCanonical === targetCanonical) {
+            return true;
+          }
+          if (candNorm.includes(targetNorm) || targetNorm.includes(candNorm)) {
+            return true;
+          }
+        }
+        return false;
+      }
+
+      function isYearMatch(row, targetYear) {
+        if (!targetYear) return true;
+        const extra = (row && row.additional_fields) || {};
+        const rowYear = normalizeBengaliText(row.academic_year_title || extra['শিক্ষাবর্ষ'] || extra.academicYearLabel || '');
+        if (!rowYear) return false;
+
+        const uClean = bnToEnNumber(normalizeBengaliText(targetYear)).replace(/\s+/g, '').toLowerCase();
+        const rClean = bnToEnNumber(rowYear).replace(/\s+/g, '').toLowerCase();
+
+        if (uClean === rClean || rClean.includes(uClean) || uClean.includes(rClean)) {
+          return true;
+        }
+
+        // Check Hijri year match (e.g. 1445, 1446, 1447, 1448)
+        const uHijri = uClean.match(/(14\d{2})/);
+        const rHijri = rClean.match(/(14\d{2})/);
+        if (uHijri && rHijri) {
+          return uHijri[1] === rHijri[1];
+        }
+
+        // Fallback: Gregorian session starting year
+        const uGreg = uClean.match(/(20\d{2})/);
+        const rGreg = rClean.match(/(20\d{2})/);
+        if (uGreg && rGreg) {
+          return uGreg[1] === rGreg[1];
+        }
+
+        return false;
+      }
+
+      function isRegMatch(row, targetRegClean) {
+        if (!targetRegClean) return false;
+        const extra = (row && row.additional_fields) || {};
+        const candidates = [
+          row.registration_no,
+          row.legacy_id,
+          row.student_id,
+          extra['রেজিস্ট্রেশন/আইডি নম্বর'],
+          extra['রেজিস্ট্রেশন/আইডি'],
+          extra.id
+        ];
+        for (let i = 0; i < candidates.length; i++) {
+          if (normalizeRegToken(candidates[i]) === targetRegClean) {
+            return true;
+          }
+        }
+        return false;
+      }
+
+      function formatDobDisplay(rawDob) {
+        if (!rawDob) return '';
+        const clean = String(rawDob).trim();
+        const isoMatch = clean.match(/^(\d{4})-(\d{2})-(\d{2})/);
+        if (isoMatch) {
+          return isoMatch[3] + '/' + isoMatch[2] + '/' + isoMatch[1];
+        }
+        return clean;
+      }
+
+      const regClean = normalizeRegToken(regRaw);
+      const rollClean = rollRaw ? normalizeRegToken(rollRaw) : '';
+
+      if (!yearParam || !jamatParam || !regClean) {
         infoDiv.innerHTML = `
           <div class="not-found">
             <i class="fas fa-exclamation-triangle"></i>
@@ -615,121 +772,146 @@
         return;
       }
 
-      const userYearClean = yearParam.trim();
-      let foundKey = null;
-      for (let key in ACADEMIC_YEAR_SHEETS) {
-        if (key === userYearClean || key.includes(userYearClean) || userYearClean.includes(key)) {
-          foundKey = key;
-          break;
-        }
-      }
-      if (!foundKey) {
-        const normalizedUser = userYearClean.replace(/\s/g, '').toLowerCase();
-        for (let key in ACADEMIC_YEAR_SHEETS) {
-          const normalizedKey = key.replace(/\s/g, '').toLowerCase();
-          if (normalizedUser === normalizedKey || normalizedKey.includes(normalizedUser) || normalizedUser.includes(normalizedKey)) {
-            foundKey = key;
-            break;
+      yearDiv.innerHTML = `শিক্ষাবর্ষ: ${escapeHtml(yearParam)}`;
+
+      async function querySupabaseStudents(queryString) {
+        const res = await fetch(`${SUPABASE_URL}/rest/v1/students?${queryString}`, {
+          method: 'GET',
+          headers: {
+            'apikey': SUPABASE_ANON_KEY,
+            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+            'Accept': 'application/json'
           }
+        });
+        if (!res.ok) {
+          throw new Error('Supabase fetch failed: ' + res.status);
         }
+        return res.json();
       }
 
-      if (foundKey) {
-        matchedYearKey = foundKey;
-        selectedSheetId = ACADEMIC_YEAR_SHEETS[foundKey];
-      } else {
-        infoDiv.innerHTML = `
-          <div class="not-found">
-            <i class="fas fa-calendar-times"></i>
-            <h2>শিক্ষাবর্ষ পাওয়া যায়নি</h2>
-            <p>"${escapeHtml(yearParam)}"</p>
-            <div class="sub">উপলব্ধ: ${Object.keys(ACADEMIC_YEAR_SHEETS).join(', ')}</div>
-          </div>
-        `;
-        yearDiv.innerHTML = `শিক্ষাবর্ষ: ${escapeHtml(yearParam)} (অমিল)`;
-        overlay.classList.remove('active', 'warning');
-        return;
+      async function findMatchingStudent() {
+        const regEn = bnToEnNumber(regRaw).trim();
+        const regBn = enToBnNumber(regEn);
+        const legacyAutoPattern = regEn + '__ay_*';
+
+        // 1. Direct indexed query for this registration / legacy / student ID
+        const orFilter = [
+          `registration_no.eq.${regEn}`,
+          `registration_no.eq.${regBn}`,
+          `legacy_id.eq.${regEn}`,
+          `legacy_id.eq.${regBn}`,
+          `legacy_id.like.${legacyAutoPattern}`,
+          `student_id.eq.${regEn}`,
+          `student_id.eq.${regBn}`
+        ].map(part => encodeURIComponent(part)).join(',');
+
+        let candidates = await querySupabaseStudents(
+          `select=*&is_deleted=eq.false&or=(${orFilter})`
+        );
+
+        // 2. Fallback partial match if needed (e.g., leading zeros or whitespace)
+        if (!Array.isArray(candidates) || candidates.length === 0) {
+          const likeFilter = [
+            `registration_no.ilike.*${regClean}*`,
+            `legacy_id.ilike.*${regClean}*`
+          ].map(part => encodeURIComponent(part)).join(',');
+          candidates = await querySupabaseStudents(
+            `select=*&is_deleted=eq.false&or=(${likeFilter})`
+          );
+        }
+
+        if (!Array.isArray(candidates) || candidates.length === 0) {
+          return null;
+        }
+
+        // Strict filtering: reg + year + jamat
+        const regMatched = candidates.filter(r => isRegMatch(r, regClean));
+        if (regMatched.length === 0) return null;
+
+        const yearMatched = regMatched.filter(r => isYearMatch(r, yearParam));
+        const yearAndJamat = yearMatched.filter(r => isJamatMatch(r, jamatParam));
+        if (yearAndJamat.length > 0) return yearAndJamat[0];
+
+        // If year matched and only one student exists for that reg in that year
+        if (yearMatched.length === 1) return yearMatched[0];
+
+        // Fallback if row had empty academic_year_title in DB
+        const emptyYearJamat = regMatched.filter(r => !r.academic_year_title && isJamatMatch(r, jamatParam));
+        if (emptyYearJamat.length > 0) return emptyYearJamat[0];
+
+        return null;
       }
 
-      yearDiv.innerHTML = `শিক্ষাবর্ষ: ${matchedYearKey}`;
-
-      const sheetURL = `https://docs.google.com/spreadsheets/d/${selectedSheetId}/gviz/tq?tqx=out:json`;
-
-      fetch(sheetURL)
-        .then(res => res.text())
-        .then(text => {
-          const json = JSON.parse(text.substr(47).slice(0, -2));
-          const rows = json.table.rows;
-          const data = rows.map(row => {
-            const obj = {};
-            json.table.cols.forEach((col, i) => {
-              if (col.label) {
-                obj[col.label.trim()] = row.c[i] ? row.c[i].v : '';
-              }
-            });
-            return obj;
-          });
-
-          const student = data.find(s => {
-            const sheetYear = s['শিক্ষাবর্ষ'] ? s['শিক্ষাবর্ষ'].toString().trim() : '';
-            const matchYear = (sheetYear === matchedYearKey) || (sheetYear === yearParam);
-            const matchJamat = s['জামাত'] === jamat;
-            const matchReg = parseInt(s['রেজিস্ট্রেশন/আইডি']) === reg;
-            return matchYear && matchJamat && matchReg;
-          });
-
-          if (!student) {
+      findMatchingStudent()
+        .then(row => {
+          if (!row) {
             infoDiv.innerHTML = `
               <div class="not-found">
                 <i class="fas fa-search"></i>
                 <h2>শিক্ষার্থী পাওয়া যায়নি</h2>
-                <p>${matchedYearKey}</p>
-                <p style="margin-top:8px;">জামাত: ${escapeHtml(jamat)}<br>রেজি: ${escapeHtml(reg)}</p>
-                ${roll ? `<div class="sub">রোল: ${roll} (ঐচ্ছিক)</div>` : ''}
+                <p>${escapeHtml(yearParam)}</p>
+                <p style="margin-top:8px;">জামাত: ${escapeHtml(jamatParam)}<br>রেজি: ${escapeHtml(regRaw)}</p>
+                ${rollRaw ? `<div class="sub">রোল: ${escapeHtml(rollRaw)} (ঐচ্ছিক)</div>` : ''}
               </div>
             `;
             overlay.classList.remove('active', 'warning');
             return;
           }
 
-          const getBadgeClass = (status) => {
-            if (!status) return 'info';
-            if (status.includes('ত্যাগকৃত') || status.includes('বহিষ্কৃত') || status.includes('বাতিল')) return 'danger';
-            if (status.includes('অধ্যয়নরত')) return 'success';
-            if (status.includes('অপেক্ষমাণ')) return 'warning';
+          const extra = row.additional_fields || {};
+          const displayYear = row.academic_year_title || extra['শিক্ষাবর্ষ'] || yearParam;
+          yearDiv.innerHTML = `শিক্ষাবর্ষ: ${escapeHtml(displayYear)}`;
+
+          const studentName = row.student_name_bn || extra['শিক্ষার্থীর নাম'] || extra.name || '';
+          const studentReg = row.registration_no || (row.legacy_id ? String(row.legacy_id).split('__ay_')[0] : '') || row.student_id || extra['রেজিস্ট্রেশন/আইডি নম্বর'] || extra['রেজিস্ট্রেশন/আইডি'] || '';
+          const studentRoll = row.roll_no || extra['রোল নম্বর'] || extra.roll || '';
+          const fatherName = row.father_name_bn || extra['পিতার নাম'] || extra.fatherName || '';
+          const marhalaName = row.marhala_name || row.marhala_stage || extra['মারহালা'] || extra.marhala || '';
+          const jamatName = row.full_jamat_name || row.jamat_name || extra['জামাত/শ্রেণী'] || extra['জামাত'] || '';
+          const somoman = row.somoman || extra['সমমান'] || '';
+          const phoneMother = row.phone_mother || extra['মোবাইল (মা)'] || row.guardian_phone || extra['অভিভাবকের মোবাইল'] || extra.mobile || '';
+          const phoneFatherBrother = row.phone_father_brother || extra['মোবাইল (বাবা/ভাই)'] || row.alt_phone || extra['২য় মোবাইল'] || extra['বিকল্প মোবাইল'] || extra.altMobile || '';
+          const birthReg = row.birth_reg_no || extra['জন্ম নিবন্ধন নাম্বার'] || extra['জন্ম নিবন্ধন নম্বর'] || extra['জন্ম নিবন্ধন/NID নং'] || extra.birthReg || '';
+          const dob = formatDobDisplay(row.dob_raw || row.birth_date || extra['জন্ম তারিখ'] || extra.dob || '');
+          const address = row.full_address || extra['ঠিকানা'] || extra['স্থায়ী ঠিকানা'] || extra.address || '';
+          const blood = row.blood_group || extra['রক্তের গ্রুপ'] || extra.bloodGroup || '';
+          const rawStatus = String(row.status || extra['শিক্ষার্থী ধরণ/স্ট্যাটাস'] || extra['স্ট্যাটাস'] || '').trim();
+          const status = rawStatus.toLowerCase() === 'active' ? 'সক্রিয়' : rawStatus;
+
+          const getBadgeClass = (st) => {
+            if (!st) return 'info';
+            if (st.includes('ত্যাগকৃত') || st.includes('বহিষ্কৃত') || st.includes('বাতিল')) return 'danger';
+            if (st.includes('অধ্যয়নরত') || st.includes('অধ্যয়নরত') || st.includes('সক্রিয়') || st.includes('সক্রিয়') || st.toLowerCase() === 'active') return 'success';
+            if (st.includes('অপেক্ষমাণ') || st.includes('স্থগিত')) return 'warning';
             return 'info';
           };
 
-          const getBadgeIcon = (status) => {
-            if (!status) return 'fa-circle-info';
-            if (status.includes('ত্যাগকৃত') || status.includes('বহিষ্কৃত') || status.includes('বাতিল')) return 'fa-circle-exclamation';
-            if (status.includes('অধ্যয়নরত')) return 'fa-circle-check';
-            if (status.includes('অপেক্ষমাণ')) return 'fa-clock';
+          const getBadgeIcon = (st) => {
+            if (!st) return 'fa-circle-info';
+            if (st.includes('ত্যাগকৃত') || st.includes('বহিষ্কৃত') || st.includes('বাতিল')) return 'fa-circle-exclamation';
+            if (st.includes('অধ্যয়নরত') || st.includes('অধ্যয়নরত') || st.includes('সক্রিয়') || st.includes('সক্রিয়') || st.toLowerCase() === 'active') return 'fa-circle-check';
+            if (st.includes('অপেক্ষমাণ') || st.includes('স্থগিত')) return 'fa-clock';
             return 'fa-circle-info';
           };
 
-          const blood = student['রক্তের গ্রুপ'] || '';
-          const bloodHTML = blood ? `
+          const bloodHTML = (blood && blood !== 'জানা নেই') ? `
             <span class="blood-badge">
               <i class="fas fa-droplet"></i>
               <span class="label">রক্তের গ্রুপ</span>
               ${escapeHtml(blood)}
             </span>
-          ` : `<span class="item-value empty">উল্লেখ নেই</span>`;
+          ` : `<span class="item-value empty">${blood ? escapeHtml(blood) : 'উল্লেখ নেই'}</span>`;
 
-          const eq = student['সমমান'] || '';
-          const eqHTML = eq ? escapeHtml(eq) : `<span class="item-value empty">উল্লেখ নেই</span>`;
-
-          const status = student['শিক্ষার্থী ধরণ/স্ট্যাটাস'] || '';
-          const statusLabel = status ? status.split(/[-–—]/)[0] : '';
+          const eqHTML = somoman ? escapeHtml(somoman) : `<span class="item-value empty">উল্লেখ নেই</span>`;
+          const statusLabel = status ? status.split(/[-–—]/)[0].trim() : '';
 
           const fullHTML = `
             <div class="profile">
               <div>
-                <div class="profile-name">${escapeHtml(student['শিক্ষার্থীর নাম'] || 'উল্লেখ নেই')}</div>
+                <div class="profile-name">${escapeHtml(studentName || 'উল্লেখ নেই')}</div>
                 <div class="profile-id">
                   <i class="fas fa-qrcode"></i>
-                  ${escapeHtml(student['রেজিস্ট্রেশন/আইডি'] || 'N/A')}
+                  ${escapeHtml(studentReg || 'N/A')}
                 </div>
               </div>
               <div class="profile-avatar">
@@ -742,7 +924,7 @@
                 <div class="item-icon"><i class="fas fa-id-card"></i></div>
                 <div>
                   <span class="item-label">রেজিস্ট্রেশন</span>
-                  <div class="item-value">${escapeHtml(student['রেজিস্ট্রেশন/আইডি'] || 'উল্লেখ নেই')}</div>
+                  <div class="item-value">${escapeHtml(studentReg || 'উল্লেখ নেই')}</div>
                 </div>
               </div>
 
@@ -750,7 +932,7 @@
                 <div class="item-icon"><i class="fas fa-sort-numeric-up"></i></div>
                 <div>
                   <span class="item-label">রোল নম্বর</span>
-                  <div class="item-value">${escapeHtml(student['রোল নম্বর'] || 'উল্লেখ নেই')}</div>
+                  <div class="item-value">${escapeHtml(studentRoll || 'উল্লেখ নেই')}</div>
                 </div>
               </div>
 
@@ -758,7 +940,7 @@
                 <div class="item-icon"><i class="fas fa-user-tie"></i></div>
                 <div>
                   <span class="item-label">পিতার নাম</span>
-                  <div class="item-value">${escapeHtml(student['পিতার নাম'] || 'উল্লেখ নেই')}</div>
+                  <div class="item-value">${escapeHtml(fatherName || 'উল্লেখ নেই')}</div>
                 </div>
               </div>
 
@@ -766,7 +948,7 @@
                 <div class="item-icon"><i class="fas fa-graduation-cap"></i></div>
                 <div>
                   <span class="item-label">মারহালা</span>
-                  <div class="item-value">${escapeHtml(student['মারহালা'] || 'উল্লেখ নেই')}</div>
+                  <div class="item-value">${escapeHtml(marhalaName || 'উল্লেখ নেই')}</div>
                 </div>
               </div>
 
@@ -774,7 +956,7 @@
                 <div class="item-icon"><i class="fas fa-users"></i></div>
                 <div>
                   <span class="item-label">জামাত/শ্রেণী</span>
-                  <div class="item-value">${escapeHtml(student['জামাত/শ্রেণী'] || 'উল্লেখ নেই')}</div>
+                  <div class="item-value">${escapeHtml(jamatName || 'উল্লেখ নেই')}</div>
                 </div>
               </div>
 
@@ -790,7 +972,7 @@
                 <div class="item-icon"><i class="fas fa-phone"></i></div>
                 <div>
                   <span class="item-label">মোবাইল (মা/বোন)</span>
-                  <div class="item-value">${escapeHtml(student['মোবাইল (মা)'] || 'উল্লেখ নেই')}</div>
+                  <div class="item-value">${escapeHtml(phoneMother || 'উল্লেখ নেই')}</div>
                 </div>
               </div>
 
@@ -798,7 +980,7 @@
                 <div class="item-icon"><i class="fas fa-phone"></i></div>
                 <div>
                   <span class="item-label">মোবাইল (বাবা/ভাই)</span>
-                  <div class="item-value">${escapeHtml(student['মোবাইল (বাবা/ভাই)'] || 'উল্লেখ নেই')}</div>
+                  <div class="item-value">${escapeHtml(phoneFatherBrother || 'উল্লেখ নেই')}</div>
                 </div>
               </div>
 
@@ -806,7 +988,7 @@
                 <div class="item-icon"><i class="fas fa-calendar-alt"></i></div>
                 <div>
                   <span class="item-label">জন্ম নিবন্ধন</span>
-                  <div class="item-value">${escapeHtml(student['জন্ম নিবন্ধন নাম্বার'] || 'উল্লেখ নেই')}</div>
+                  <div class="item-value">${escapeHtml(birthReg || 'উল্লেখ নেই')}</div>
                 </div>
               </div>
 
@@ -814,7 +996,7 @@
                 <div class="item-icon"><i class="fas fa-cake-candles"></i></div>
                 <div>
                   <span class="item-label">জন্ম তারিখ</span>
-                  <div class="item-value">${escapeHtml(student['জন্ম তারিখ'] || 'উল্লেখ নেই')}</div>
+                  <div class="item-value">${escapeHtml(dob || 'উল্লেখ নেই')}</div>
                 </div>
               </div>
 
@@ -822,7 +1004,7 @@
                 <div class="item-icon"><i class="fas fa-map-pin"></i></div>
                 <div>
                   <span class="item-label">ঠিকানা</span>
-                  <div class="item-value">${escapeHtml(student['ঠিকানা'] || 'উল্লেখ নেই')}</div>
+                  <div class="item-value">${escapeHtml(address || 'উল্লেখ নেই')}</div>
                 </div>
               </div>
 
@@ -854,10 +1036,11 @@
           else if (status.includes('—')) { let parts = status.split('—'); mainStatus = parts[0].trim(); subStatus = parts[1] ? parts[1].trim() : ''; }
           else if (status.includes('-')) { let parts = status.split('-'); mainStatus = parts[0].trim(); subStatus = parts[1] ? parts[1].trim() : ''; }
           if (status.includes('সাময়িক ভর্তি বাতিল')) { mainStatus = 'সাময়িক ভর্তি বাতিল'; subStatus = ''; }
+          else if (status.includes('পূর্ণ ভর্তি বাতিল')) { mainStatus = 'পূর্ণ ভর্তি বাতিল'; subStatus = ''; }
 
           overlayMain.innerText = mainStatus || 'স্ট্যাটাস';
           overlaySub.innerText = subStatus || '';
-          const isWarning = status.includes('ত্যাগকৃত') || status.includes('বহিষ্কৃত') || status.includes('সাময়িক ভর্তি বাতিল');
+          const isWarning = status.includes('ত্যাগকৃত') || status.includes('বহিষ্কৃত') || status.includes('বাতিল');
           overlay.classList.add('active');
           if (isWarning) {
             overlay.classList.add('warning');
@@ -891,16 +1074,6 @@
           `;
           overlay.classList.remove('active', 'warning');
         });
-
-      function escapeHtml(str) {
-        if (!str) return '';
-        return String(str).replace(/[&<>]/g, function(m) {
-          if (m === '&') return '&amp;';
-          if (m === '<') return '&lt;';
-          if (m === '>') return '&gt;';
-          return m;
-        });
-      }
     })();
   </script>
 </body>
